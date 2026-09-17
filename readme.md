@@ -62,28 +62,18 @@
     mode: "MANUAL"
     ```
 ## 第三章：飞控设置与试飞
+*记录介绍滤波和PIDs调节*
 * 在QGC -> Analyze Tools -> MAVLink Console 中修改IMU发布频率
   ```
   nxh>ls && cd /fs/microsd && mkdir etc
   nxh>echo "mavlink stream -d /dev/ttyS3 -s ATTITUDE_QUATERNION -r 200" > /fs/microsd/etc/extras.txt
   nxh>echo "mavlink stream -d /dev/ttyS3 -s HIGHRES_IMU -r 200" >> /fs/microsd/etc/extras.txt
   ```
-  
-* 修改机架类型为 `Generic 250 Racer`，代指250mm轴距机型。如果是其他尺寸的机架，请根据实际轴距选择机架类型
-
-* 修改`dshot_config`为dshot600
-
-* 修改`CBRK_SUPPLY_CHK`为894281 *执行这步跳过了电源检查，因此左侧栏的电池设置部分就算是红的也没关系*
-
-* 修改`CBRK_USB_CHK`为197848
-
-* 修改`CBRK_IO_SAFETY`为22027
-
-* 修改`SER_TEL1_BAUD`为921600
-
-* 修改`SYS_USE_IO`为0（搜索不到则不用管）
-
 * 上电前请先用万用表通断档检测电源正负焊点是否短接，强烈建议第一次上电前先接一个[短路保护器](https://item.taobao.com/item.htm?spm=a230r.1.14.6.72b83b20uNbZk7&id=656973651729&ns=1&abbucket=19#detail)
+
+*TODOs*:
+* 滤波笔记
+* PIDs调节笔记
 
 ## 第四章：Ubuntu20.04的安装
 
@@ -94,6 +84,7 @@
   * 交换空间（逻辑分区）16000M（内存大小的两倍）
   * 挂载点`/`（主分区）剩余所有容量
   * <font color="#dd0000">笔记本上也需要安装ubuntu，推荐装20.04版本。虚拟机或双系统都可以，如果有长期学习打算推荐双系统</font>
+
 ## 第五章：机载电脑的环境配置
 * ROS安装
   * `sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'`
@@ -213,7 +204,7 @@
   * `sh shfiles/rspx4.sh`
   * `rostopic echo /vins_fusion/imu_propagate`
   * 拿起飞机进行缓慢的小范围晃动，放回原地后确认没有太大误差
-  * 遥控器5通道拨到内侧，六通道拨到下侧，油门打到中位
+  * 查看[笔记](https://app.notion.com/p/FastDrone250-px4ctrl-374b7664a095808f8d5bff7543ac9a18)，了解遥控器通道设置以及切换逻辑。将遥控器5通道拨到内侧，六通道拨到下侧，油门打到中位
   * `roslaunch px4ctrl run_ctrl.launch`
   * `sh shfiles/takeoff.sh`，如果飞机螺旋桨开始旋转，但无法起飞，说明`hover_percent`参数过小；如果飞机有明显飞过1米高，再下降的样子，说明`hover_percent`参数过大
   * 遥控器此时可以以类似大疆飞机的操作逻辑对无人机进行位置控制
