@@ -171,10 +171,10 @@
 * 检查飞控mavros连接正常
   * `ls /dev/ttyPixhawk`
   * `sudo chmod 777 /dev/ttyPixhawk`，为串口附加权限
-  * `roslaunch mavors px4.launch fuc_url:=/dev/ttyPixhawk:921600`
+  * `roslaunch mavors px4.launch fcu_url:=/dev/ttyPixhawk:921600`
   * `rostopic hz /mavros/imu/data_raw`，确认飞控传输的imu频率在200hz左右
 * 检查realsense驱动正常
-  * `roslaunch realsense2_camera rs_camera.launch`
+  * `roslaunch realsense2_camera rs_camera.launch enable_infra1:=true enable_infra2:=true`
   * 进入远程桌面，`rqt_image_view`
   * 查看`/camera/infra1/image_rect_raw`,`/camera/infra2/image_rect_raw`,`/camera/depth/image_rect_raw`话题正常
 * VINS参数设置
