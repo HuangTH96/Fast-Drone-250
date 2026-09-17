@@ -30,23 +30,22 @@
   * 使用转接线连接TELEM2口和适配器的针脚 \
   ![接口说明](./Docs/telem2%20-%20ftdi.png)
 * Linux按插入顺序，为USB设备分配名字，为了防止出错，为 USB Serial Port 指定名字
-  ```
-  # 查看设备ID，记录其中 pixhawk相关的口，如: Bus 003 Device 005: ID 26ac:0011
-  lsusb
+  * 查看设备ID `lsusb`，记录其中 pixhawk相关的口，如: Bus 003 Device 005: ID 26ac:0011
+  * 更改UDEV规则文件
+    ```
+    cd /etc/udev/rules.d/
+    sudo vim 98-pixhawk.rules
+    ```
+  * 为 pixhawk串口创建 sumlink `SUBSYSTEM=="tty", ATTRS{idVendor}=="26ac", ATTRS{idProduct}=="0011", SYMLINK+="ttyPixhawk"`
 
-  # 更改UDEV规则文件
-  cd /etc/udev/rules.d/
-  sudo vim 98-pixhawk.rules
-
-  #为 pixhawk串口创建 sumlink
-  SUBSYSTEM=="tty", ATTRS{idVendor}=="26ac", ATTRS{idProduct}=="0011", SYMLINK+="ttyPixhawk"
-
-  # 重新加载udev规则，查看是否成功
-  sudo udevadm control --reload-rules
-  sudo udevadm trigger
-  ls -la /dev/ttyPixhawk
-  # 成功时应该显示：lrwxrwxrwx 1 root root 7 ... /dev/ttyPixhawk -> ttyUSB0
-  ```
+  * 重新加载udev规则，查看是否成功
+    ```
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    ls -la /dev/ttyPixhawk
+    ```
+    成功时应该显示 `lrwxrwxrwx 1 root root 7 ... /dev/ttyPixhawk -> ttyUSB0`
+    
 * 检查飞控和IntelNUC是否连接成功
   * 查看是否识别适配器 `ls /dev/ttyUSB*`，插上模块前后应该能看到有一个新的设备
   * 查看数据读取 `ls -la /dev/ttyUSB0`，如果显示 `crw-rw---- root dialout`， 需要确认当前用户在 dialout 组 `groups $USER`，如果没有`dialout`，则需要手动授权 `sudo usermod -a -G dialout $USER`，然后重新登录，或者临时，`sudo chmod 666 /dev/ttyPixhawk`
