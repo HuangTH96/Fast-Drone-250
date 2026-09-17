@@ -19,11 +19,7 @@
 - [Q&A 常见问题及解答](#qa-常见问题及解答)
 
 ## 第一章：动力套焊接
-  机器人本体相关配件及焊接用工具详见[purchase_list.xlsx](purchase_list.xlsx)。\
-
-  TODOs：\
-  1. 更新 purchase_list.xlsx
-  2. 更新焊接文档
+  查看[笔记](https://app.notion.com/p/2-10-3d2b7664a095805aa339c0923253d95e?v=2f6b7664a0958013a6a6000c337cbfa1&source=copy_link)
 ## 第二章：机载电脑与相机的连接
 * 相机通过 usb3.0 和IntelNUC 通信，也就是要使用支持 usb3.0的数据线
 * 飞控和机载电脑通过usb2ttl适配器通信：IntelNUC - FTDI 适配器 - Pixhawk（TELEM2）
@@ -161,7 +157,7 @@
   * `obstacles_inflation`：代表障碍物膨胀大小，单位为米。建议至少设置为飞机半径（包括螺旋桨、桨保）的1.5倍以上，但不要超过`resolution`的4倍。如果飞机轴距较大，请相应改大`resolution`
 * `src/realflight_modules/px4ctrl/config/ctrl_param_fpv.yaml`下的：
   * `mass`：修改为无人机的实际重量
-  * `hover_percent`：修改为无人机的悬停油门，可以通过px4log查看，具体可以参考[文档](https://www.bookstack.cn/read/px4-user-guide/zh-log-flight_review.md) 如果你的无人机是和课程的一模一样的话，这项保持为0.3即可。如果更改了动力配置，或重量发生变化，或轴距发生变化，都请调整此项，否则自动起飞时会发生无法起飞或者超调严重的情况。
+  * `hover_percent`：修改为无人机的悬停油门，可以通过px4log查看，具体可以参考[文档](https://www.bookstack.cn/read/px4-user-guide/zh-log-flight_review.md) 也就是PX4中的 `MPC_THR_HOVER`
   * `gain/Kp,Kv`：即PID中的PI项，一般不用太大改动。如果发生超调，请适当调小。如果无人机响应较慢，请适当调大。
   * `rc_reverse`：这项使用乐迪AT9S的不用管。如果在第十一课的自动起飞中，发现飞机的飞行方向与摇杆方向相反，说明需要修改此项，把相反的通道对应的值改为true。其中throttle如果反了，实际实验中会比较危险，建议在起飞前就确认好，步骤为：
     * `roslaunch mavros px4.launch`
@@ -200,7 +196,6 @@
 
 ## 第九章：Ego-Planner的实验
 * 自动起飞：
-
   * `sh shfiles/rspx4.sh`
   * `rostopic echo /vins_fusion/imu_propagate`
   * 拿起飞机进行缓慢的小范围晃动，放回原地后确认没有太大误差
