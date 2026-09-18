@@ -124,7 +124,7 @@
 * 下载ego-planner源码并编译
   * `cd ~/Fast-Drone-250`
   * `catkin_make`
-  * `source devel/setup.bash`
+  * `echo "source ~/Fast-Drone-250/devel/setup.bash" >> ~/.bashrc`
   * `roslaunch ego_planner single_run_in_sim.launch`
   * 在Rviz内按下键盘G键，再单击鼠标左键以点选无人机目标点
 
@@ -180,7 +180,7 @@
 * VINS参数设置
   * 进入`realflight_modules/VINS_Fusion/config/`
   * 驱动realsense后，`rostopic echo /camera/infra1/camera_info`，`rostopic echo /camera/infra2/camera_info`，分别把其中的K矩阵中的fx,fy,cx,cy填入`/src/realflight_modules/VINS-Fusion/config/left.yaml`和`/src/realflight_modules/VINS-Fusion/config/right.yaml`
-  * 在home目录创建文件夹`mkdir ~/vins_output` (如果你的用户名不是intel，需要修改`/fast-drone-250.yaml`内的vins_out_path为你实际创建的文件夹的绝对路径)
+  * 在home目录创建文件夹`mkdir ~/vins_output` (如果你的用户名不是intel，需要修改`/src/realflight_modules/VINS-Fusion/config/fast-drone-250.yaml`内的vins_out_path为你实际创建的文件夹的绝对路径)
   * 修改`/src/realflight_modules/VINS-Fusion/config/fast-drone-250.yaml`的`body_T_cam0`和`body_T_cam1`的`data`矩阵的第四列为你的无人机上的相机相对于飞控的实际外参，单位为米，顺序为x/y/z，第四项是1，不用改
   
 * VINS外参精确自标定
