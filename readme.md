@@ -199,7 +199,7 @@
   * `sh shfiles/rspx4.sh`
   * `rostopic echo /vins_fusion/imu_propagate`
   * 拿起飞机进行缓慢的小范围晃动，放回原地后确认没有太大误差
-  * 查看[笔记](https://app.notion.com/p/FastDrone250-px4ctrl-374b7664a095808f8d5bff7543ac9a18)，了解遥控器通道设置以及切换逻辑。将遥控器5通道拨到内侧，六通道拨到下侧，油门打到中位
+  * 查看遥控器通道设置 `rostopic echo /mavros/rc/in` 分别拨动sw5和sw6，确认输出列表中的**第四位和第五位发生变化，并且上切时，数值最高**。将遥控器sw5通道拨到上档，六通道拨到下档，油门打到中位，进入 MANUAL_CTRL 状态。查看[笔记](https://app.notion.com/p/FastDrone250-px4ctrl-3de1cb83606780a29f7bf13789e62fe8?source=copy_link)，了解更多遥控器通道设置以及切换逻辑。
   * `roslaunch px4ctrl run_ctrl.launch`
   * `sh shfiles/takeoff.sh`，如果飞机螺旋桨开始旋转，但无法起飞，说明`hover_percent`参数过小；如果飞机有明显飞过1米高，再下降的样子，说明`hover_percent`参数过大
   * 遥控器此时可以以类似大疆飞机的操作逻辑对无人机进行位置控制

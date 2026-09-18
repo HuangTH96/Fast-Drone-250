@@ -24,6 +24,7 @@ void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg)
     msg = *pMsg;
     rcv_stamp = ros::Time::now();
 
+    // 读取 /mavros/rc/in 话题上的消息，依次判断各个通道的电平，从而判断是什么档位
     for (int i = 0; i < 4; i++)
     {
         ch[i] = ((double)msg.channels[i] - 1500.0) / 500.0;
@@ -35,12 +36,17 @@ void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg)
             ch[i] = 0.0;
     }
 
+    // 1. 读取原始PWM，归一化到 [-1, 1]；
+    // msg.channels[4] 对应 sw5
+    // msg.channels[5] 对应 sw6
+    // msg.channels[7] 对应 sw8
     mode = ((double)msg.channels[4] - 1000.0) / 1000.0;
     gear = ((double)msg.channels[5] - 1000.0) / 1000.0;
     reboot_cmd = ((double)msg.channels[7] - 1000.0) / 1000.0;
 
     check_validity();
 
+    // 2. 检测上一时刻的状态
     if (!have_init_last_mode)
     {
         have_init_last_mode = true;
@@ -57,32 +63,34 @@ void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg)
         last_reboot_cmd = reboot_cmd;
     }
 
-    // 1
+    // 3. 与上一时刻比较，判断 sw5 是否被切入上档，从而判断是否 enter_hover_mode
     if (last_mode < API_MODE_THRESHOLD_VALUE && mode > API_MODE_THRESHOLD_VALUE)
         enter_hover_mode = true;
     else
         enter_hover_mode = false;
 
+    // 4. sw5已经是在上档了，所以是 is_hover_mode
     if (mode > API_MODE_THRESHOLD_VALUE)
         is_hover_mode = true;
     else
         is_hover_mode = false;
 
-    // 2
+    // 5. 当已经在 HOVER_MODE 中时
     if (is_hover_mode)
     {
+        // 5.1 如果 sw6 切入到上档，则判断 enter_command_mode（CMD_CTRL）
         if (last_gear < GEAR_SHIFT_VALUE && gear > GEAR_SHIFT_VALUE)
             enter_command_mode = true;
         else if (gear < GEAR_SHIFT_VALUE)
             enter_command_mode = false;
-
+        // 5.2 如果 sw6 已经在上档，则判断 is_command_mode（CMD_CTRL）
         if (gear > GEAR_SHIFT_VALUE)
             is_command_mode = true;
         else
             is_command_mode = false;
     }
 
-    // 3
+    // 6. 判断是否重启
     if (!is_hover_mode && !is_command_mode)
     {
         if (last_reboot_cmd < REBOOT_THRESHOLD_VALUE && reboot_cmd > REBOOT_THRESHOLD_VALUE)

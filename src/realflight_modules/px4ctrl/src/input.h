@@ -37,6 +37,7 @@ public:
   bool enter_hover_mode;
   bool toggle_reboot;
 
+  // 和归一化后的sw取值比较，用来判断该通道当前档位情况
   static constexpr double GEAR_SHIFT_VALUE = 0.75;
   static constexpr double API_MODE_THRESHOLD_VALUE = 0.75;
   static constexpr double REBOOT_THRESHOLD_VALUE = 0.5;
