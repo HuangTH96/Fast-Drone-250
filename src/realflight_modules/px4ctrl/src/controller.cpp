@@ -97,6 +97,7 @@ LinearControl::computeDesiredCollectiveThrustSignal(
   return throttle_percentage;
 }
 
+// 实际RLS油门估算算法
 bool 
 LinearControl::estimateThrustModel(
     const Eigen::Vector3d &est_a,
@@ -142,11 +143,12 @@ LinearControl::estimateThrustModel(
   return false;
 }
 
+// 根据hover_percentage作为初值，重置真实油门值估算时的相关参数
 void 
 LinearControl::resetThrustMapping(void)
 {
-  thr2acc_ = param_.gra / param_.thr_map.hover_percentage;
-  P_ = 1e6;
+  thr2acc_ = param_.gra / param_.thr_map.hover_percentage; // 重置"估计值"本身
+  P_ = 1e6; // 重置"对这个估计值的置信度"
 }
 
 

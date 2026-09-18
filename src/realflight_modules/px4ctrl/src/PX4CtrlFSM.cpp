@@ -47,7 +47,8 @@ void PX4CtrlFSM::process()
 	switch (state)
 	{
 	case MANUAL_CTRL:
-	{
+	{	
+		// sw5被切入到上档
 		if (rc_data.enter_hover_mode) // Try to jump to AUTO_HOVER
 		{
 			if (!odom_is_received(now_time))
@@ -65,16 +66,20 @@ void PX4CtrlFSM::process()
 				ROS_ERROR("[px4ctrl] Reject AUTO_HOVER(L2). Odom_Vel=%fm/s, which seems that the locolization module goes wrong!", odom_data.v.norm());
 				break;
 			}
-
+			// 如果满足上述条件，则切换至 AUTO_HOVER
 			state = AUTO_HOVER;
+			// 重置RLS参数
 			controller.resetThrustMapping();
+			// 将里程计中的微分平坦变量作为目标setpoint
 			set_hov_with_odom();
+			// 让飞控从ONBOARD MODE 切入到OFFBOARD MODE
 			toggle_offboard_mode(true);
 
 			ROS_INFO("\033[32m[px4ctrl] MANUAL_CTRL(L1) --> AUTO_HOVER(L2)\033[32m");
 		}
+		// 如果允许起飞/降落，且接收到了起飞/降落的指令
 		else if (param.takeoff_land.enable && takeoff_land_data.triggered && takeoff_land_data.takeoff_land_cmd == quadrotor_msgs::TakeoffLand::TAKEOFF) // Try to jump to AUTO_TAKEOFF
-		{
+		{	
 			if (!odom_is_received(now_time))
 			{
 				ROS_ERROR("[px4ctrl] Reject AUTO_TAKEOFF. No odom!");
@@ -113,10 +118,13 @@ void PX4CtrlFSM::process()
 					break;
 				}
 			}
-
+			// 如果满足上述要求，则从 MANUAL_CTRL 切换到 AUTO_TAKEOFF
 			state = AUTO_TAKEOFF;
+			// 重置油门估算参数
 			controller.resetThrustMapping();
+			// 记录当前里程计位置记为初始位置，用来计算爬升/下降高度是否达到预期
 			set_start_pose_for_takeoff_land(odom_data);
+			// 让PX4从 ONBOARD MODE 切入到 OFFBOARD MODE
 			toggle_offboard_mode(true);				  // toggle on offboard before arm
 			for (int i = 0; i < 10 && ros::ok(); ++i) // wait for 0.1 seconds to allow mode change by FMU // mark
 			{
@@ -591,19 +599,25 @@ bool PX4CtrlFSM::toggle_offboard_mode(bool on_off)
 
 	if (on_off)
 	{
+		// 把当前飞控的模式存档，记录在 state_data.state_before_offboard
 		state_data.state_before_offboard = state_data.current_state;
 		if (state_data.state_before_offboard.mode == "OFFBOARD") // Not allowed
 			state_data.state_before_offboard.mode = "MANUAL";
 
 		offb_set_mode.request.custom_mode = "OFFBOARD";
+		// 调用MAVROS提供的 /mavros/set_mode 服务，把 custom_mode 设置成 OFFBOARD 发送过去
 		if (!(set_FCU_mode_srv.call(offb_set_mode) && offb_set_mode.response.mode_sent))
 		{
+			// 如果ROS service调用本身没有成功
+			// 或者调用成功，但是PX4拒绝切换（比如PX4要求已经持续接收到setpoint数据流，才允许切换到OFFBOARD MODE）
+			// 则报错
 			ROS_ERROR("Enter OFFBOARD rejected by PX4!");
 			return false;
 		}
 	}
 	else
 	{
+		// 当退出OFFBOARD MODE时，读取之前的存档，切换回去
 		offb_set_mode.request.custom_mode = state_data.state_before_offboard.mode;
 		if (!(set_FCU_mode_srv.call(offb_set_mode) && offb_set_mode.response.mode_sent))
 		{
