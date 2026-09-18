@@ -1,0 +1,107 @@
+<launch>
+    <!-- ============================================================
+         参考 ego-planner-swarm 的 swarm.launch（每台机独立的drone_id/目标点）
+         + Fast-Drone-250 的 single_run_in_exp.launch（真机VIO/深度相机/px4ctrl链路）
+         三台机器各跑一份，只需要在命令行覆盖 drone_id / next_drone_ip 等参数即可，
+         例如：
+           roslaunch ego_planner swarm_run_in_exp.launch drone_id:=0 next_drone_ip:=192.168.1.102
+           roslaunch ego_planner swarm_run_in_exp.launch drone_id:=1 next_drone_ip:=192.168.1.103
+           roslaunch ego_planner swarm_run_in_exp.launch drone_id:=2 next_drone_ip:=192.168.1.101
+         ============================================================ -->
+
+    <!--  每台机必须不同的参数  -->
+    <arg name="drone_id" default="0"/>
+    <!-- 链式组网：指向下一台机的IP，最后一台可以指回第一台（安全空操作，不影响逻辑） -->
+    <arg name="next_drone_ip" default="127.0.0.1"/>
+    <!-- 三台机同一个子网的广播地址 -->
+    <arg name="broadcast_ip" default="127.0.0.255"/>
+
+    <!-- 单机模式下用RViz点2D Nav Goal（flight_type=1）在多机场景不现实，
+         默认换成flight_type=2，直接用下面的point0作为这台机的目标点 -->
+    <arg name="flight_type" default="2" />
+    <arg name="target_x" default="15.0"/>
+    <arg name="target_y" default="0.0"/>
+    <arg name="target_z" default="1.0"/>
+
+    <!--  三台机共用的参数（跟single_run_in_exp.launch保持一致）  -->
+    <arg name="obj_num" value="10" />
+    <arg name="map_size_x" value="100"/>
+    <arg name="map_size_y" value="50"/>
+    <arg name="map_size_z" value="3.0"/>
+    <arg name="odom_topic" value="/vins_fusion/imu_propagate"/>
+
+    <!-- 集群避碰安全余量：VIO有漂移，实机比默认0.5给大一点 -->
+    <arg name="swarm_clearance" default="0.8"/>
+
+    <!-- main algorithm params：注意这里include的是 advanced_param_exp_swarm.xml，
+         不是原来的advanced_param_exp.xml —— 差异只有两处：
+         1) broadcast_bspline_to_planner 改指向 /broadcast_bspline2（修掉自环bug）
+         2) swarm_clearance 从写死改成可传参 -->
+    <include file="$(find ego_planner)/launch/advanced_param_exp_swarm.xml">
+        <arg name="drone_id" value="$(arg drone_id)"/>
+        <arg name="map_size_x_" value="$(arg map_size_x)"/>
+        <arg name="map_size_y_" value="$(arg map_size_y)"/>
+        <arg name="map_size_z_" value="$(arg map_size_z)"/>
+        <arg name="odometry_topic" value="$(arg odom_topic)"/>
+        <arg name="obj_num_set" value="$(arg obj_num)" />
+
+        <arg name="camera_pose_topic" value="nouse1"/>
+        <arg name="depth_topic" value="/camera/depth/image_rect_raw"/>
+        <arg name="cloud_topic" value="nouse2"/>
+
+        <!-- 深度相机内参：三台如果是同型号相机可以共用，型号不同要分别标定改这里 -->
+        <arg name="cx" value="323.3316345214844"/>
+        <arg name="cy" value="234.95498657226562"/>
+        <arg name="fx" value="384.39654541015625"/>
+        <arg name="fy" value="384.39654541015625"/>
+
+        <!-- 集群场景先保守一点，稳定后再逐步提高 -->
+        <arg name="max_vel" value="0.5" />
+        <arg name="max_acc" value="6.0" />
+        <arg name="planning_horizon" value="6" />
+
+        <!-- 集群必须打开，单机版默认关闭 -->
+        <arg name="use_distinctive_trajs" value="true" />
+
+        <arg name="flight_type" value="$(arg flight_type)" />
+        <arg name="point_num" value="1" />
+        <arg name="point0_x" value="$(arg target_x)" />
+        <arg name="point0_y" value="$(arg target_y)" />
+        <arg name="point0_z" value="$(arg target_z)" />
+        <!-- point1~point4 未启用（point_num=1时只有point0生效），保留占位即可 -->
+        <arg name="point1_x" value="0.0" />
+        <arg name="point1_y" value="0.0" />
+        <arg name="point1_z" value="1.0" />
+        <arg name="point2_x" value="0.0" />
+        <arg name="point2_y" value="0.0" />
+        <arg name="point2_z" value="1.0" />
+        <arg name="point3_x" value="0.0" />
+        <arg name="point3_y" value="0.0" />
+        <arg name="point3_z" value="1.0" />
+        <arg name="point4_x" value="0.0" />
+        <arg name="point4_y" value="0.0" />
+        <arg name="point4_z" value="1.0" />
+
+        <arg name="swarm_clearance" value="$(arg swarm_clearance)"/>
+    </include>
+
+    <!-- trajectory server：和单机版完全一样，position_cmd不加drone_id前缀，
+         直接发到全局 /position_cmd，本机px4ctrl的run_ctrl.launch会去接这个话题 -->
+    <node pkg="ego_planner" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="screen">
+        <remap from="~planning/bspline" to="drone_$(arg drone_id)_planning/bspline"/>
+        <param name="traj_server/time_forward" value="1.0" type="double"/>
+    </node>
+
+    <!--  机间通信桥：本机跑一份，配好drone_id和网络参数  -->
+    <node pkg="rosmsg_tcp_bridge" name="drone_$(arg drone_id)_bridge_node" type="bridge_node" output="screen">
+        <remap from="position_cmd" to="drone_$(arg drone_id)_planning/pos_cmd"/>
+        <remap from="planning/bspline" to="drone_$(arg drone_id)_planning/bspline"/>
+        <remap from="~my_odom" to="$(arg odom_topic)"/>
+
+        <param name="next_drone_ip" value="$(arg next_drone_ip)" type="string"/>
+        <param name="broadcast_ip" value="$(arg broadcast_ip)" type="string"/>
+        <param name="drone_id" value="$(arg drone_id)"/>
+        <param name="odom_max_freq" value="70"/>
+    </node>
+
+</launch>
